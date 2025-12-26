@@ -1,0 +1,5 @@
+{
+  "name": "4.4 - INTENTO DE BD EN LOCALHOST",
+  "description": "Herramienta especializada para cruzar catálogos de Mercado Libre y Odoo, con dashboard de métricas de sincronización y cálculo de precios.",
+  "requestFramePermissions": []
+}
