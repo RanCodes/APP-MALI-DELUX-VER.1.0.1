@@ -6,6 +6,7 @@ import FileUpload from './components/FileUpload';
 import DataGrid from './components/DataGrid';
 import StatsDashboard from './components/StatsDashboard';
 import WeightManager from './components/WeightManager';
+import { fetchLogisticsData, persistRates, persistWeights } from './services/logisticsService';
 
 const Tooltip: React.FC<{ text: string }> = ({ text }) => (
   <div className="group relative flex items-center ml-1">
@@ -26,28 +27,27 @@ const App: React.FC = () => {
   // Requisito: Siempre abrir en tema oscuro
   const [darkMode, setDarkMode] = useState(true);
 
-  // Base de Pesos y Escalas con persistencia
-  const [weights, setWeights] = useState<WeightEntry[]>(() => {
-    const saved = localStorage.getItem('app_weights');
-    return saved ? JSON.parse(saved) : [];
-  });
-  
-  const [rates, setRates] = useState<ShippingRate[]>(() => {
-    const saved = localStorage.getItem('app_shipping_rates');
-    return saved ? JSON.parse(saved) : [
-      { maxWeight: 0.5, cost: 5500 },
-      { maxWeight: 1.0, cost: 6800 },
-      { maxWeight: 2.0, cost: 8200 }
-    ];
-  });
+  // Base de Pesos y Escalas con persistencia en BD
+  const [weights, setWeights] = useState<WeightEntry[]>([]);
+  const [rates, setRates] = useState<ShippingRate[]>([]);
+  const [loadingLogistics, setLoadingLogistics] = useState(true);
+  const [savingLogistics, setSavingLogistics] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('app_weights', JSON.stringify(weights));
-  }, [weights]);
+    const loadLogistics = async () => {
+      try {
+        const { weights: storedWeights, rates: storedRates } = await fetchLogisticsData();
+        setWeights(storedWeights);
+        setRates(storedRates);
+      } catch (error: any) {
+        setErrorMessage('No se pudo cargar la base de datos de Logística.');
+      } finally {
+        setLoadingLogistics(false);
+      }
+    };
 
-  useEffect(() => {
-    localStorage.setItem('app_shipping_rates', JSON.stringify(rates));
-  }, [rates]);
+    loadLogistics();
+  }, []);
 
   const [mlSheet, setMlSheet] = useState<ParsedSheet | null>(null);
   const [odooSheet, setOdooSheet] = useState<ParsedSheet | null>(null);
@@ -124,6 +124,38 @@ const App: React.FC = () => {
             setStatus(AnalysisStatus.ERROR);
         }
     }, 100);
+  };
+
+  const handleWeightsChange = (newWeights: WeightEntry[]) => {
+    setWeights(newWeights);
+    persistWeightsSafe(newWeights);
+  };
+
+  const handleRatesChange = (newRates: ShippingRate[]) => {
+    setRates(newRates);
+    persistRatesSafe(newRates);
+  };
+
+  const persistWeightsSafe = async (newWeights: WeightEntry[]) => {
+    setSavingLogistics(true);
+    try {
+      await persistWeights(newWeights);
+    } catch (error: any) {
+      setErrorMessage('No se pudo guardar la tabla de Pesos en la base de datos.');
+    } finally {
+      setSavingLogistics(false);
+    }
+  };
+
+  const persistRatesSafe = async (newRates: ShippingRate[]) => {
+    setSavingLogistics(true);
+    try {
+      await persistRates(newRates);
+    } catch (error: any) {
+      setErrorMessage('No se pudo guardar las escalas tarifarias en la base de datos.');
+    } finally {
+      setSavingLogistics(false);
+    }
   };
 
   return (
@@ -257,11 +289,13 @@ const App: React.FC = () => {
             </div>
           </div>
         ) : (
-          <WeightManager 
-            weights={weights} 
-            onWeightsChange={setWeights} 
-            rates={rates} 
-            onRatesChange={setRates} 
+          <WeightManager
+            weights={weights}
+            onWeightsChange={handleWeightsChange}
+            rates={rates}
+            onRatesChange={handleRatesChange}
+            loading={loadingLogistics}
+            saving={savingLogistics}
           />
         )}
       </main>

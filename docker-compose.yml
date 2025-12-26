@@ -1,0 +1,26 @@
+version: '3.9'
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "4000:4000"
+    volumes:
+      - db-data:/data
+    environment:
+      - DB_PATH=/data/logistics.json
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    ports:
+      - "4173:80"
+    depends_on:
+      - api
+
+volumes:
+  db-data:

@@ -8,9 +8,11 @@ interface WeightManagerProps {
   onWeightsChange: (newWeights: WeightEntry[]) => void;
   rates: ShippingRate[];
   onRatesChange: (newRates: ShippingRate[]) => void;
+  loading?: boolean;
+  saving?: boolean;
 }
 
-const WeightManager: React.FC<WeightManagerProps> = ({ weights, onWeightsChange, rates, onRatesChange }) => {
+const WeightManager: React.FC<WeightManagerProps> = ({ weights, onWeightsChange, rates, onRatesChange, loading, saving }) => {
   const [sku, setSku] = useState('');
   const [product, setProduct] = useState('');
   const [weight, setWeight] = useState('');
@@ -22,6 +24,17 @@ const WeightManager: React.FC<WeightManagerProps> = ({ weights, onWeightsChange,
   const [cost, setCost] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const backupInputRef = useRef<HTMLInputElement>(null);
+  const isSaving = Boolean(saving);
+
+  if (loading) {
+    return (
+      <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-200 dark:border-slate-800 text-center shadow-2xl">
+        <div className="mx-auto mb-4 w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="font-black text-slate-800 dark:text-white">Cargando base de datos de Logística...</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Conectando con el almacenamiento persistente.</p>
+      </div>
+    );
+  }
 
   const addWeight = (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,7 +214,12 @@ const WeightManager: React.FC<WeightManagerProps> = ({ weights, onWeightsChange,
              <svg className="w-24 h-24 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
           </div>
           <h3 className="text-xl font-black text-white mb-2 flex items-center gap-3">Gestión de Base de Datos</h3>
-          <p className="text-sm font-medium text-slate-400 mb-6">Mueve tus datos entre contenedores Docker mediante Backups maestros.</p>
+          <div className="flex items-center gap-3 mb-4">
+            <p className="text-sm font-medium text-slate-200">Mueve tus datos entre contenedores Docker mediante Backups maestros.</p>
+            <span className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-widest ${isSaving ? 'bg-amber-500/20 text-amber-100 border border-amber-400/40' : 'bg-emerald-500/15 text-emerald-100 border border-emerald-400/30'}`}>
+              {isSaving ? 'Guardando...' : 'BD Activa'}
+            </span>
+          </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
             <button 
@@ -231,17 +249,17 @@ const WeightManager: React.FC<WeightManagerProps> = ({ weights, onWeightsChange,
             1. Escalas Tarifarias
           </h3>
           <form onSubmit={addRate} className="flex gap-3 mb-8">
-            <input 
-              type="number" step="0.1" placeholder="Hasta kg" 
+            <input
+              type="number" step="0.1" placeholder="Hasta kg"
               className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 shadow-inner transition-all"
               value={maxW} onChange={e => setMaxW(e.target.value)}
             />
-            <input 
-              type="number" placeholder="Costo $" 
+            <input
+              type="number" placeholder="Costo $"
               className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 shadow-inner transition-all"
               value={cost} onChange={e => setCost(e.target.value)}
             />
-            <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-2xl transition-all font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95">
+            <button type="submit" disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-2xl transition-all font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 disabled:opacity-50">
               Añadir
             </button>
           </form>
@@ -319,9 +337,10 @@ const WeightManager: React.FC<WeightManagerProps> = ({ weights, onWeightsChange,
                 className={`flex-1 bg-white dark:bg-slate-900 border rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white outline-none focus:ring-2 transition-all ${editingSku ? 'border-amber-300 focus:ring-amber-500' : 'border-slate-200 dark:border-slate-800 focus:ring-blue-500'}`}
                 value={product} onChange={e => setProduct(e.target.value)}
               />
-              <button 
-                type="submit" 
-                className={`px-6 rounded-xl transition-all font-black text-xs uppercase tracking-widest text-white shadow-lg shadow-blue-500/10 active:scale-95 ${editingSku ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/20' : 'bg-slate-900 hover:bg-black dark:bg-blue-600 dark:hover:bg-blue-500'}`}
+              <button
+                type="submit"
+                disabled={isSaving}
+                className={`px-6 rounded-xl transition-all font-black text-xs uppercase tracking-widest text-white shadow-lg shadow-blue-500/10 active:scale-95 disabled:opacity-50 ${editingSku ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-500/20' : 'bg-slate-900 hover:bg-black dark:bg-blue-600 dark:hover:bg-blue-500'}`}
               >
                 {editingSku ? 'Guardar' : 'Añadir'}
               </button>
@@ -365,7 +384,7 @@ const WeightManager: React.FC<WeightManagerProps> = ({ weights, onWeightsChange,
             <span>Registros: {weights.length}</span>
             <span className="text-emerald-500 flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-lg shadow-emerald-500/50"></div>
-                Docker Persistent Storage (v1.2)
+                BD SQLite Persistente
             </span>
           </div>
         </div>
