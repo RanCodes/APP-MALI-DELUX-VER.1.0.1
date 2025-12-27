@@ -32,4 +32,4 @@ docker-compose up --build
 
 - Frontend: http://localhost:4173
 - Backend: http://localhost:4000 (expuesto) y accesible desde el frontend vía `/api` gracias al proxy NGINX.
-- Los datos de Logística se guardan en el volumen `db-data` dentro del archivo `logistics.json`, manteniéndose entre reinicios de contenedor.
+- Los datos de Logística se guardan en `./data/logistics.json` (montado como volumen en el contenedor), por lo que quedan persistidos en tu PC entre reinicios.
